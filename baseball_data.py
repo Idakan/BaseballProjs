@@ -390,4 +390,3 @@ pitching_cols = ['Pitchers Used', 'Individual Earned Runs', 'Team Earned Runs', 
 
 defensive_cols = ['Putouts', 'Assists', 'Errors', 'Passed Balls', 'Double Plays', 'Triple Plays', "Result"]
 px.line(fin_df,x="Game No.",y="Wins",color="Team Name")
-#hi there
