@@ -249,16 +249,16 @@ app.layout = html.Div(
                     children=[
                         html.Div(children="All Teams", className="menu-title"),
 
-                      dcc.Checklist(
+                        dcc.Checklist(
                           id="my-checklist",
                           options=team_dict,
                           value=["NYA"],
                           className='my_box_container',
                           labelStyle={"display": "inline-block"},
-                      )
+                        )
                     ]
                 ),
-            html.Div(
+                html.Div(
                     children=[
                         html.Div(
                             children="Date Range", className="menu-title"
@@ -269,6 +269,20 @@ app.layout = html.Div(
                             max_date_allowed=data["Date"].max().date(),
                             start_date=data["Date"].min().date(),
                             end_date=data["Date"].max().date(),
+                        ),
+                    ]
+                ),
+                html.Div(
+                    children=[
+                        html.Div(
+                            children="Through N games", className="menu-title"
+                        ),
+                        dcc.Slider(
+                            id="num-slider",
+                            min=1,
+                            max=162,
+                            step=1,
+                            value=162,
                         ),
                     ]
                 ),
@@ -284,7 +298,14 @@ app.layout = html.Div(
                     ),
                     className="card",
                 ),
-                 html.Div(
+                html.Div(
+                    children=dcc.Graph(
+                        id="best-chart",
+                        config={"displayModeBar": False},
+                    ),
+                    className="card",
+                ),
+                html.Div(
                     children=dcc.Graph(
                         id="diff-chart",
                         config={"displayModeBar": False},
@@ -302,91 +323,40 @@ app.layout = html.Div(
 @app.callback(
     Output("win-chart", "figure"),
     Output("diff-chart", "figure"),
+    Output("best-chart","figure"),
     Input("my-checklist","value"),
     Input("date-range", "start_date"),
     Input("date-range", "end_date"),
+    Input("num-slider","value")
 )
-def update_charts(options, start_date, end_date):
+def update_charts(options, start_date, end_date, num_games):
     filtered_data = data[(data['Team'].isin(options)) & (data['Date'] >= start_date) & (data['Date'] <= end_date)]
     filtered_data['Game No.'] = list(pd.concat([pd.DataFrame(filtered_data[filtered_data["Team"] == team][['Team','Differential']].reset_index(drop=True).groupby(by="Team").cumsum().reset_index()['index']) for team in options])['index'])
     filtered_data['Game No.'] = filtered_data['Game No.'] + 1
     filtered_data["Year"] = filtered_data['Date'].dt.year
     filtered_data["Wins"] = filtered_data[["Team","Result"]].groupby(by=["Team"]).cumsum()
     filtered_data["Diff_Cum"] = filtered_data[["Team","Differential"]].groupby(by=["Team"]).cumsum()
-    color_seq=["yellow", "blue", "pink", "skyblue","yellow", "blue", "pink", "skyblue"]
-    win_chart_figure = px.line(filtered_data, x="Game No.",y="Wins",color="Team Name",title='Wins above or below 0.500',color_discrete_map=team_color_map)
-    diff_chart_figure = px.line(filtered_data, x="Game No.",y="Diff_Cum",color="Team",title="Team's Run Differential")
+    win_chart_figure = px.line(filtered_data, x="Game No.", y="Wins", color="Team Name",
+                               title='Wins above or below 0.500', color_discrete_map=team_color_map)
+    diff_chart_figure = px.line(filtered_data, x="Game No.", y="Diff_Cum", color="Team",
+                                title="Team's Run Differential", color_discrete_map=team_color_map)
+    filtered_data = filtered_data.drop(columns=['Wins', 'Game No.'])
+    filtered_data['Game No.'] = list(pd.concat([pd.DataFrame(
+        filtered_data[(filtered_data["Team"] == team) & (filtered_data["Year"] == year)][
+            ['Team', 'Year', 'Differential']].reset_index(drop=True).groupby(
+            by=["Team", "Year"]).cumsum().reset_index()['index']) for team in options for year in range(1990, 2023)])['index'])
+    filtered_data2 = filtered_data[filtered_data['Game No.'] <= num_games]
+    filtered_data2["Wins"] = filtered_data2[["Team", "Year", "Result"]].groupby(by=["Team", "Year"]).cumsum()
+    filtered_data3 = filtered_data2[filtered_data2["Game No."] == num_games]
+    max_wins_df = filtered_data3[["Team", "Wins"]].groupby("Team").max().reset_index()  # .drop_duplicates()
+    semi_fin_df = pd.merge(filtered_data3[["Team", "Year", "Wins"]], max_wins_df, on=["Team", "Wins"]).groupby(
+        ["Team", "Wins"]).max().reset_index()[["Team", "Year"]]
+    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team", "Year"])
+    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team'].astype(str)
 
-    return win_chart_figure, diff_chart_figure
+    best_chart_figure = px.line(fin_df, x="Game No.", y="Wins", color="Team Name", color_discrete_map=team_color_map)
+    return win_chart_figure, diff_chart_figure, best_chart_figure
 
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-data = df_final.sort_values(by=["Team","Date"])
-teams = data["Team"].sort_values().unique()
-start_date = pd.to_datetime("1990-01-01")
-end_date = pd.to_datetime("2023-01-01")
-years = range(1990,2023)
-filtered_data = data[(data['Team'].isin(teams)) & (data['Date'] >= start_date) & (data['Date'] <= end_date)]
-filtered_data['Game No.'] = list(pd.concat([pd.DataFrame(filtered_data[(filtered_data["Team"] == team)&(filtered_data["Year"]==year)][['Team','Year','Differential']].reset_index(drop=True).groupby(by=["Team","Year"]).cumsum().reset_index()['index']) for team in teams for year in years])['index'])
-#pd.DataFrame(filtered_data[(filtered_data["Team"] == 'HOU')&(filtered_data["Year"]==2021)][['Team','Year','Differential']].reset_index(drop=True).groupby(by=["Team","Year"]).cumsum().reset_index()['index'])
-filtered_data['Game No.'] = filtered_data['Game No.'] + 1
-# filtered_data["Year"] = filtered_data['Date'].dt.year
-# filtered_data["Wins"] = filtered_data[["Team","Result"]].groupby(by=["Team"]).cumsum()
-# num_games = 25
-filtered_data
-
-num_games = 161
-filtered_data2 = filtered_data[filtered_data['Game No.'] <= num_games]
-filtered_data2["Wins"] = filtered_data2[["Team","Year","Result"]].groupby(by=["Team","Year"]).cumsum()
-filtered_data3 = filtered_data2[filtered_data2["Game No."]==num_games]
-max_wins_df = filtered_data3[["Team","Wins"]].groupby("Team").max().reset_index()#.drop_duplicates()
-semi_fin_df = pd.merge(filtered_data3[["Team","Year","Wins"]], max_wins_df,on=["Team","Wins"]).groupby(["Team","Wins"]).max().reset_index()[["Team","Year"]]
-fin_df = pd.merge(semi_fin_df,filtered_data2,how='left',on=["Team","Year"])
-fin_df["Team Name"] = fin_df['Year'].apply(lambda x: str(x)) + ' ' + fin_df['Team'].apply(lambda x: team_dict[x])
-#filtered_data2[["Team","Wins"]].groupby("Team").max().reset_index().drop_duplicates()
-
-team_dict
-
-df_wins = df_trim[df_trim['Team_Fin'].isin(teams)][['Team Game Number','Team_Fin','Result']]
-df_wins = df_wins.pivot(index='Team Game Number', columns='Team_Fin', values='Result')
-for team in df_wins.columns:
-  df_wins[f"{team}_fin"] = df_wins[f"{team}"].cumsum()
-  df_wins = df_wins.drop(team,axis=1)
-df_wins
-
-
-df_runs = df_trim[df_trim['Team_Fin'].isin(teams)][['Team Game Number','Team_Fin','Score']]
-df_runs = df_runs.pivot(index='Team Game Number', columns='Team_Fin', values='Score')
-df_runs.columns
-for team in df_runs.columns:
-  df_runs[f"{team}_fin"] = df_runs[f"{team}"].cumsum()
-  df_runs = df_runs.drop(team,axis=1)
-df_runs
-
-df_diff = df_trim[df_trim['Team_Fin'].isin(teams)][['Team Game Number','Team_Fin','Differential']]
-df_diff = df_diff.pivot(index='Team Game Number', columns='Team_Fin', values='Differential')
-df_diff.columns
-for team in df_diff.columns:
-  df_diff[f"{team}_fin"] = df_diff[f"{team}"].cumsum()
-  df_diff = df_diff.drop(team,axis=1)
-df_diff
-
-# Create column subsets which can be used for correlation matrices and modeling
-cumulative_cols = ["At-Bats", "Hits", "Doubles", "Triples", "Home Runs", "RBI", "Sacrifice Hits",
-                 "Sacrifice Flies", "Hit-by-Pitch", "Walks", "Intentional Walks", "Strikeouts",
-                 "Stolen Bases", "Caught Stealing", "Grounded into Double Plays", "Awarded First on Catcher's Interference",
-                 "Left on Base", 'Pitchers Used', 'Individual Earned Runs', 'Team Earned Runs', 'Wild Pitches', 'Balks', 'Putouts',
-                 'Assists', 'Errors', 'Passed Balls', 'Double Plays', 'Triple Plays', "Result"]
-
-offensive_cols = ["At-Bats", "Hits", "Doubles", "Triples", "Home Runs", "RBI", "Sacrifice Hits",
-                 "Sacrifice Flies", "Hit-by-Pitch", "Walks", "Intentional Walks", "Strikeouts",
-                 "Stolen Bases", "Caught Stealing", "Grounded into Double Plays", "Awarded First on Catcher's Interference",
-                 "Left on Base", "Result"]
-
-pitching_cols = ['Pitchers Used', 'Individual Earned Runs', 'Team Earned Runs', 'Wild Pitches', 'Balks',
-                 "Result"]
-
-defensive_cols = ['Putouts', 'Assists', 'Errors', 'Passed Balls', 'Double Plays', 'Triple Plays', "Result"]
-px.line(fin_df,x="Game No.",y="Wins",color="Team Name")
