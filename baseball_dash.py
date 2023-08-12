@@ -277,12 +277,12 @@ app.layout = html.Div(
                         html.Div(
                             children="Through N games", className="menu-title"
                         ),
-                        dcc.Slider(
-                            id="num-slider",
+                        dcc.Input(
+                            id='range',
+                            type='number',
                             min=1,
                             max=162,
-                            step=1,
-                            value=162,
+                            step=1
                         ),
                     ]
                 ),
@@ -327,7 +327,7 @@ app.layout = html.Div(
     Input("my-checklist","value"),
     Input("date-range", "start_date"),
     Input("date-range", "end_date"),
-    Input("num-slider","value")
+    Input("range","value")
 )
 def update_charts(options, start_date, end_date, num_games):
     filtered_data = data[(data['Team'].isin(options)) & (data['Date'] >= start_date) & (data['Date'] <= end_date)]
