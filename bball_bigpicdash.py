@@ -96,6 +96,13 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     children=dcc.Graph(
+                        id="diff-chart",
+                        config={"displayModeBar": False},
+                    ),
+                    className="card",
+                ),
+                html.Div(
+                    children=dcc.Graph(
                         id="best-chart",
                         config={"displayModeBar": False},
                     ),
@@ -103,7 +110,7 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     children=dcc.Graph(
-                        id="diff-chart",
+                        id="worst-chart",
                         config={"displayModeBar": False},
                     ),
                     className="card",
@@ -120,6 +127,7 @@ app.layout = html.Div(
     Output("win-chart", "figure"),
     Output("diff-chart", "figure"),
     Output("best-chart","figure"),
+    Output("worst-chart", "figure"),
     Input("my-checklist","value"),
     Input("date-range", "start_date"),
     Input("date-range", "end_date"),
@@ -134,7 +142,7 @@ def update_charts(options, start_date, end_date, num_games):
     filtered_data["Diff_Cum"] = filtered_data[["Team","Differential"]].groupby(by=["Team"]).cumsum()
     win_chart_figure = px.line(filtered_data, x="Game No.", y="Wins", color="Team Name",
                                title='Wins above or below 0.500', color_discrete_map=team_color_map)
-    diff_chart_figure = px.line(filtered_data, x="Game No.", y="Diff_Cum", color="Team",
+    diff_chart_figure = px.line(filtered_data, x="Game No.", y="Diff_Cum", color="Team Name",
                                 title="Team's Run Differential", color_discrete_map=team_color_map)
     filtered_data = filtered_data.drop(columns=['Wins', 'Game No.'])
     filtered_data['Game No.'] = list(pd.concat([pd.DataFrame(
@@ -145,13 +153,20 @@ def update_charts(options, start_date, end_date, num_games):
     filtered_data2["Wins"] = filtered_data2[["Team", "Year", "Result"]].groupby(by=["Team", "Year"]).cumsum()
     filtered_data3 = filtered_data2[filtered_data2["Game No."] == num_games]
     max_wins_df = filtered_data3[["Team", "Wins"]].groupby("Team").max().reset_index()  # .drop_duplicates()
+
     semi_fin_df = pd.merge(filtered_data3[["Team", "Year", "Wins"]], max_wins_df, on=["Team", "Wins"]).groupby(
         ["Team", "Wins"]).max().reset_index()[["Team", "Year"]]
     fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team", "Year"])
     fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team'].astype(str)
-
     best_chart_figure = px.line(fin_df, x="Game No.", y="Wins", color="Team Name", color_discrete_map=team_color_map)
-    return win_chart_figure, diff_chart_figure, best_chart_figure
+
+    min_wins_df = filtered_data3[["Team", "Wins"]].groupby("Team").min().reset_index()  # .drop_duplicates()
+    semi_fin_df = pd.merge(filtered_data3[["Team", "Year", "Wins"]], min_wins_df, on=["Team", "Wins"]).groupby(
+        ["Team", "Wins"]).max().reset_index()[["Team", "Year"]]
+    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team", "Year"])
+    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team'].astype(str)
+    worst_chart_figure = px.line(fin_df, x="Game No.", y="Wins", color="Team Name", color_discrete_map=team_color_map)
+    return win_chart_figure, diff_chart_figure, best_chart_figure, worst_chart_figure
 
 
 if __name__ == "__main__":

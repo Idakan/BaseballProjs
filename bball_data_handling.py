@@ -74,11 +74,9 @@ for playoff_series in ["wc", "dv", "lc", "ws"]:
 # Compose list of desired dataframes
 list_df = []
 exec("list_df = ["+ ",".join(['df_'+ str(i) for i in range(1990,2023)]) +"]")
-print(list_df[-1])
 print('HI')
 for df in [df_wc, df_dv, df_lc, df_ws]:
     list_df.append(df)
-print(list_df)
 df_total = pd.concat(list_df) # concatenate
 df_total = pd.DataFrame(df_total) # convert to pandas DataFrame
 df_total.shape # check the shape of large dataframe
