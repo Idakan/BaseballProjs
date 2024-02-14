@@ -10,6 +10,7 @@ from plotly.offline import plot
 import numpy as np
 from bball_data_handling import data, teams, team_dict, team_color_map, team_names_df
 
+
 external_stylesheets = [
     {
         "href": (
@@ -147,24 +148,24 @@ def update_charts(options, start_date, end_date, num_games):
     filtered_data = filtered_data.drop(columns=['Wins', 'Game No.'])
     filtered_data['Game No.'] = list(pd.concat([pd.DataFrame(
         filtered_data[(filtered_data["Team"] == team) & (filtered_data["Year"] == year)][
-            ['Team', 'Year', 'Differential']].reset_index(drop=True).groupby(
-            by=["Team", "Year"]).cumsum().reset_index()['index']) for team in options for year in range(1990, 2023)])['index'])
+            ['Team Name', 'Year', 'Differential']].reset_index(drop=True).groupby(
+            by=["Team Name", "Year"]).cumsum().reset_index()['index']) for team in options for year in range(1990, 2023)])['index'])
     filtered_data2 = filtered_data[filtered_data['Game No.'] <= num_games]
-    filtered_data2["Wins"] = filtered_data2[["Team", "Year", "Result"]].groupby(by=["Team", "Year"]).cumsum()
+    filtered_data2["Wins"] = filtered_data2[["Team Name", "Year", "Result"]].groupby(by=["Team Name", "Year"]).cumsum()
     filtered_data3 = filtered_data2[filtered_data2["Game No."] == num_games]
-    max_wins_df = filtered_data3[["Team", "Wins"]].groupby("Team").max().reset_index()  # .drop_duplicates()
+    max_wins_df = filtered_data3[["Team Name", "Wins"]].groupby("Team Name").max().reset_index()  # .drop_duplicates()
 
-    semi_fin_df = pd.merge(filtered_data3[["Team", "Year", "Wins"]], max_wins_df, on=["Team", "Wins"]).groupby(
-        ["Team", "Wins"]).max().reset_index()[["Team", "Year"]]
-    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team", "Year"])
-    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team'].astype(str)
+    semi_fin_df = pd.merge(filtered_data3[["Team Name", "Year", "Wins"]], max_wins_df, on=["Team Name", "Wins"]).groupby(
+        ["Team Name", "Wins"]).max().reset_index()[["Team Name", "Year"]]
+    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team Name", "Year"])
+    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team Name'].astype(str)
     best_chart_figure = px.line(fin_df, x="Game No.", y="Wins", color="Team Name", color_discrete_map=team_color_map)
 
-    min_wins_df = filtered_data3[["Team", "Wins"]].groupby("Team").min().reset_index()  # .drop_duplicates()
-    semi_fin_df = pd.merge(filtered_data3[["Team", "Year", "Wins"]], min_wins_df, on=["Team", "Wins"]).groupby(
-        ["Team", "Wins"]).max().reset_index()[["Team", "Year"]]
-    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team", "Year"])
-    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team'].astype(str)
+    min_wins_df = filtered_data3[["Team Name", "Wins"]].groupby("Team Name").min().reset_index()  # .drop_duplicates()
+    semi_fin_df = pd.merge(filtered_data3[["Team Name", "Year", "Wins"]], min_wins_df, on=["Team Name", "Wins"]).groupby(
+        ["Team Name", "Wins"]).max().reset_index()[["Team Name", "Year"]]
+    fin_df = pd.merge(semi_fin_df, filtered_data2, how='left', on=["Team Name", "Year"])
+    fin_df["Team Name"] = fin_df['Year'].astype(str) + ' ' + fin_df['Team Name'].astype(str)
     worst_chart_figure = px.line(fin_df, x="Game No.", y="Wins", color="Team Name", color_discrete_map=team_color_map)
     return win_chart_figure, diff_chart_figure, best_chart_figure, worst_chart_figure
 

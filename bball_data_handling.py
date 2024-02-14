@@ -142,7 +142,7 @@ df_home.columns = columns
 df_final = pd.concat([df_home, df_visiting])
 
 df_final['Team_Fin'] = df_final['Year'].apply(lambda x: str(x)) + '_' + df_final['Team']
-df_final.sort_values(by = ['Team','Date'])
+df_final.sort_values(by = ['Team', 'Date'])
 
 
 team_names_df = pd.read_csv('C:/Users/ynakadi/PycharmProjects/General Projects/Lib/bballfiles/CurrentNames.csv')
@@ -191,7 +191,6 @@ team_color_map={
                 "Los Angeles Angels":"#BA0021"
 
                 }
-
 data = df_final[df_final["Game Type"] == 'Regular Season'].sort_values(by=["Team","Date"])
 teams = data["Team"].sort_values().unique()
 
