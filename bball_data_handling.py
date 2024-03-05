@@ -57,15 +57,15 @@ all_columns = ["Date", "Number of Game", "Day of Week", "Visiting Team", "Vistin
      'Home Player 7 Name', 'Home Player 7 Position', 'Home Player 8 ID', 'Home Player 8 Name',
      'Home Player 8 Position', 'Home Player 9 ID', 'Home Player 9 Name', 'Home Player 9 Position',
      'Additional Information', 'Acquisition Information']
-for num in range(1990, 2023):
-  exec(f"df_{num} = pd.read_csv('C:/Users/ynakadi/PycharmProjects/General Projects/Lib/retrosheets/gl{num}.txt')")
+for num in range(1990, 2024):
+  exec(f"df_{num} = pd.read_csv('retrosheets/gl{num}.txt')")
   exec(f"df_{num}.columns = all_columns")
   exec(f"df_{num}['Date'] =  pd.to_datetime(df_{num} ['Date'], format='%Y%m%d')")
   exec(f"df_{num}['Game Type'] =  'Regular Season' ")
 
 
 for playoff_series in ["wc", "dv", "lc", "ws"]:
-  exec(f"df_{playoff_series} = pd.read_csv('C:/Users/ynakadi/PycharmProjects/General Projects/Lib/retrosheets/gl{playoff_series}.txt')")
+  exec(f"df_{playoff_series} = pd.read_csv('retrosheets/gl{playoff_series}.txt')")
   exec(f"df_{playoff_series}.columns = all_columns")
   exec(f"df_{playoff_series}['Date'] =  pd.to_datetime(df_{playoff_series} ['Date'], format='%Y%m%d')")
   exec(f"df_{playoff_series}['Game Type'] =  'Playoffs' ")
@@ -73,8 +73,7 @@ for playoff_series in ["wc", "dv", "lc", "ws"]:
 
 # Compose list of desired dataframes
 list_df = []
-exec("list_df = ["+ ",".join(['df_'+ str(i) for i in range(1990,2023)]) +"]")
-print('HI')
+exec("list_df = ["+ ",".join(['df_'+ str(i) for i in range(1990,2024)]) +"]")
 for df in [df_wc, df_dv, df_lc, df_ws]:
     list_df.append(df)
 df_total = pd.concat(list_df) # concatenate
@@ -164,7 +163,7 @@ team_color_map={
                 "New York Yankees": "darkblue",
                 "Houston Astros": "orange",
                 "Baltimore Orioles": '#ff7f0e',
-                "Cincinatti Reds":"#C6011F",
+                "Cincinnati Reds":"#C6011F",
                 "Los Angeles Dodgers": "#005A9C",
                 "Texas Rangers" : "blue",
                 "Tampa Bay Rays":"navy",
