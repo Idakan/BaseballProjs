@@ -137,22 +137,18 @@ df_visiting.columns = columns
 df_home = df_total[home_features]
 df_home.columns = columns
 
-# concatenate home and visiting dataframes into cumulative dataset
+# concatenate home and visiting dataframes into big dataset
 df_final = pd.concat([df_home, df_visiting])
 
-df_final['Team_Fin'] = df_final['Year'].apply(lambda x: str(x)) + '_' + df_final['Team']
-df_final.sort_values(by = ['Team', 'Date'])
 
 
-team_names_df = pd.read_csv('C:/Users/ynakadi/PycharmProjects/General Projects/Lib/bballfiles/CurrentNames.csv')
-team_names_df#['Team Name'] = team_names_df['CITY'] + ' ' + team_names_df['NICKNAME']
+team_names_df = pd.read_csv('CurrentNames.csv')
 name_change_dict = team_names_df[['Former Name','Current Name']].set_index('Former Name').to_dict()['Current Name']
 df_final["Team"] = df_final["Team"].apply(lambda x: name_change_dict[x])
 team_names_df["Team Name"] = team_names_df['City'] + ' ' + team_names_df['Team']
-team_names_df
-#
+
 team_dict = team_names_df[team_names_df['Former Name'].isin(name_change_dict.values())][['Former Name','Team Name']].set_index('Former Name').to_dict()['Team Name']
-# name_change_dict
+
 df_final["Team Name"] = df_final["Team"].apply(lambda x: team_dict[x])
 len(set(df_final["Team Name"]))
 
